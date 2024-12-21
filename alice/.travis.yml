@@ -1,0 +1,35 @@
+# use the latest ubuntu environment (18.04) available on travis
+dist: xenial
+
+language: go
+
+# You don't need to test on very old versions of the Go compiler. It's the user's
+# responsibility to keep their compiler up to date.
+go:
+  - 1.22.x
+
+# Only clone the most recent commit.
+git:
+  depth: 1
+
+# Don't email me the results of the test runs.
+notifications:
+  email: false
+
+# Anything in before_script that returns a nonzero exit code will flunk the
+# build and immediately stop. It's sorta like having set -e enabled in bash.
+# Make sure golangci-lint is vendored.
+# before_script:
+#   - go get github.com/onsi/gomega
+#   - go get github.com/onsi/ginkgo/ginkgo
+
+# script always runs to completion (set +e). If we have linter issues AND a
+# failing test, we want to see both. Configure golangci-lint with a
+# .golangci.yml file at the top level of your repo.
+script:
+  - make tss-example || travis_terminate 1; # Build tss-example to make sure example is executable.
+  - make install-golinter || make lint || travis_terminate 1;        # Run a bunch of code checkers/linters in parallel.
+  - make unit-test || travis_terminate 1;   # Run all the tests with the race detector enabled.
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
